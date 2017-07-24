@@ -91,7 +91,7 @@ public class Driver {
 		if(M[f.getChain().get(j)][f.getChain().get(y)] == 1)
 			return isPrev(i,x,j,y-1,f,M);
 		if(M[f.getChain().get(i)][f.getChain().get(x)] == 1)
-			return isPrev(i,x+1,j,y-1,f,M);
+			return isPrev(i,x+1,j,y,f,M);
 		
 		return false;
 	}
