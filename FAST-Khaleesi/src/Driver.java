@@ -33,6 +33,9 @@ public class Driver {
 		ArrayList<Tuple> vLinks = generateE(flowsList.get(0),rcm);
 		System.out.println(vLinks);
 		
+		Heuristic hrst = new Heuristic();
+		hrst.executeHeuristic(substrateNetwork, rcm, flowsList.get(0), vLinks, mbSpecs);
+		
 	}
 	
 	public static ArrayList<Tuple> generateE(Flow f, int [][] M){
