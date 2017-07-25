@@ -17,6 +17,8 @@ public class OverlayMapping {
     HashMap<Tuple, ArrayList<Tuple>> linkMapping; // This array represents the
                                                   // link mapping.
 
+    ArrayList<Tuple> chainOrder;
+    
     // Initialization Constructor
     public OverlayMapping(int N) {
         nodeMapping = new int[N];
@@ -26,6 +28,7 @@ public class OverlayMapping {
             nodeMapping[i] = -1;
 
         linkMapping = new HashMap<Tuple, ArrayList<Tuple>>();
+        chainOrder  = new ArrayList<Tuple>(); 
     }
 
     // Get the node mapping
@@ -102,7 +105,15 @@ public class OverlayMapping {
         return settledLinks == requiredLinks;
     }
 
-    // Print the content of the overlay mapping
+    public ArrayList<Tuple> getChainOrder() {
+		return chainOrder;
+	}
+
+	public void setChainOrder(ArrayList<Tuple> chainOrder) {
+		this.chainOrder = chainOrder;
+	}
+
+	// Print the content of the overlay mapping
     public String toString() {
         String content = "";
         for (int i = 0; i < nodeMapping.length; i++) {

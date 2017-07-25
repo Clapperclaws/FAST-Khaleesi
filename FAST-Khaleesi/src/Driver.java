@@ -21,7 +21,7 @@ public class Driver {
 		
 		//Read Middlebox Specs
 		int[] mbSpecs = ReadMBSpecs("Dataset/mb-demands");
-		System.out.println(Arrays.toString(mbSpecs));
+		System.out.println("MBs Specs:"+Arrays.toString(mbSpecs));
 		
 		//Read RCM
 		int[][] rcm = ReadRCM("Dataset/mb-rcm",mbSpecs.length);
@@ -31,7 +31,7 @@ public class Driver {
 		}
 				
 		ArrayList<Tuple> vLinks = generateE(flowsList.get(0),rcm);
-		System.out.println(vLinks);
+		System.out.println("List of Es \n"+vLinks);
 		
 		Heuristic hrst = new Heuristic();
 		hrst.executeHeuristic(substrateNetwork, rcm, flowsList.get(0), vLinks, mbSpecs);
@@ -50,17 +50,17 @@ public class Driver {
 		
 		for(int i=0;i<f.getChain().size()-1;i++){
 			//Get Chain Head
-			System.out.println("Comparing NF "+i);
+			//System.out.println("Comparing NF "+i);
 			for(int j=i+1;j<f.getChain().size();j++){ 
-				System.out.println("with NF "+j);
+				//System.out.println("with NF "+j);
 				if(isNext(i, i+1, j, j-1, f, M)){
-					System.out.println("NFs "+f.getChain().get(i)+" has next "+f.getChain().get(j));
+					//System.out.println("NFs "+f.getChain().get(i)+" has next "+f.getChain().get(j));
 					if(!contains(vLinks,f.getChain().get(i),f.getChain().get(j)))
 						vLinks.add(new Tuple(f.getChain().get(i), f.getChain().get(j)));
 				
 				}
 				if(isPrev(i,i+1,j,j-1, f, M)){
-					System.out.println("NFs "+f.getChain().get(i)+" has previous "+f.getChain().get(j));
+					//System.out.println("NFs "+f.getChain().get(i)+" has previous "+f.getChain().get(j));
 					if(!contains(vLinks,f.getChain().get(j),f.getChain().get(i)))
 						vLinks.add(new Tuple(f.getChain().get(j), f.getChain().get(i)));
 				}
