@@ -66,6 +66,10 @@ public class Graph {
         }
         return -1;
     }
+    
+    public int getNodeCount(){
+    	return this.getAdjList().size();
+    }
 
     public int[] getNodeCap() {
 		return nodeCap;

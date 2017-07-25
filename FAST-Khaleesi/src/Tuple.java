@@ -1,6 +1,6 @@
 
 /* Tuple represents a link; i.e., the index of the source node and destination node of a link*/
-public class Tuple {
+public class Tuple implements Comparable<Tuple>{
 	
 	private int source; // Index of the link's source node
 	private int destination; //Index of the link's destination node
@@ -60,5 +60,9 @@ public class Tuple {
 		else
 			return source;
 	}
+	
+	 public int compareTo(Tuple t) {
+	     return t.getDestination()-this.getDestination();
+	 }
 
 }

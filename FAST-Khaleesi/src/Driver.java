@@ -53,7 +53,7 @@ public class Driver {
 			System.out.println("Comparing NF "+i);
 			for(int j=i+1;j<f.getChain().size();j++){ 
 				System.out.println("with NF "+j);
-				if(isNext(i ,j , f, M)){
+				if(isNext(i, i+1, j, j-1, f, M)){
 					System.out.println("NFs "+f.getChain().get(i)+" has next "+f.getChain().get(j));
 					if(!contains(vLinks,f.getChain().get(i),f.getChain().get(j)))
 						vLinks.add(new Tuple(f.getChain().get(i), f.getChain().get(j)));
@@ -69,16 +69,19 @@ public class Driver {
 		return vLinks;
 	}
 	
-	public static boolean isNext(int i, int j, Flow f, int[][] M){
-		if(f.getChain().get(i+1) == f.getChain().get(j))
+	public static boolean isNext(int i, int x, int j, int y, Flow f, int[][] M){
+		if(f.getChain().get(i) == f.getChain().get(y))
 			return true;
-	
-		if(M[f.getChain().get(j-1)][f.getChain().get(j)] == 1){
-			return isNext(i, j-1, f, M);
-		}
-		if(M[f.getChain().get(i)][f.getChain().get(i+1)] == 1){
-			return isNext(i+1,j, f, M);
-		}
+		
+		if(f.getChain().get(j) == f.getChain().get(x))
+			return true;
+
+		if(M[f.getChain().get(j)][f.getChain().get(y)] == 1)
+			return isNext(i, x, j, y-1, f, M);
+		
+		if(M[f.getChain().get(i)][f.getChain().get(x)] == 1)
+			return isNext(i, x+1,j, y, f, M);
+		
 		return false;
 	}
 	
