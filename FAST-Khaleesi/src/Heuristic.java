@@ -78,7 +78,8 @@ public class Heuristic {
 				System.out.println("de_"+i+"="+de);
 			}		
 			System.out.println(" Value = "+G.getNodeCap()[i]/(di+de));
-			candidateNodes.add(new Tuple(i, G.getNodeCap()[i]/(di+de)));
+			double oc = (double)G.getNodeCap()[i]/(double)(di+de);
+			candidateNodes.add(new Tuple(i, (int)(oc*100)));
 		}
 	
 		
@@ -86,7 +87,99 @@ public class Heuristic {
 		Collections.sort(candidateNodes);
 		System.out.println("Candidate Nodes");
 		System.out.println(candidateNodes);
+
+		int[] nodeCaps = new int[candidateNodes.size()];
+		
+		for(int i=0;i<validChains.size();i++){
+			System.out.println("For Valid Chain "+validChains.get(i));
 			
+			//Initialize Nodes Cap
+			for(int e=0;e<nodeCaps.length;e++)
+				nodeCaps[e] = G.getNodeCap()[candidateNodes.get(e).getSource()];
+		
+			//Initialize a new Overlay Mapping Solution
+			OverlayMapping om = new OverlayMapping(f.getChain().size());
+			
+			for(int j=0;j<candidateNodes.size();j++){
+				int serverIndex = candidateNodes.get(j).getSource();
+				System.out.println("Candidate Server "+serverIndex);
+				
+				HashMap<Integer,ArrayList<Integer>> OCs = new HashMap<Integer,ArrayList<Integer>>();
+
+				for(int t=0;t<=validChains.get(i).size();t++){ //For every NF in the chain
+					
+					int nodeCap = nodeCaps[j];
+					int NFType = -1;
+					if(t == validChains.get(i).size())
+						NFType = validChains.get(i).get(t-1).getDestination();
+					else
+						NFType = validChains.get(i).get(t).getSource();
+					
+					if(om.nodeMapping[getIndexNF(f, NFType)] != -1)
+						continue;				
+								
+					if(nodeCap < (mbSpecs[NFType]))
+						continue;
+					
+					nodeCap -=	mbSpecs[NFType];
+					OCs.put(NFType, new ArrayList<Integer>()); // Initialize a new tuple
+					OCs.get(NFType).add(NFType);
+					
+					for(int k=t;k<validChains.get(i).size();k++){ //Loop through the remaining tuples
+						
+						if(om.nodeMapping[getIndexNF(f,validChains.get(i).get(k).getSource())] != -1)
+							continue;
+						
+						if(om.nodeMapping[getIndexNF(f,validChains.get(i).get(k).getDestination())] != -1)
+							continue;
+						
+						if(!OCs.get(NFType).contains(validChains.get(i).get(k).getSource())){
+							
+							if(nodeCap >= (mbSpecs[validChains.get(i).get(k).getSource()]+
+										  mbSpecs[validChains.get(i).get(k).getDestination()])){
+								nodeCap-= (mbSpecs[validChains.get(i).get(k).getSource()]+
+									  mbSpecs[validChains.get(i).get(k).getDestination()]);
+								//If sufficient cap to accommodate tuple; add tuple to the list
+								OCs.get(NFType).add(validChains.get(i).get(k).getSource());	
+								OCs.get(NFType).add(validChains.get(i).get(k).getDestination());	
+							}
+							}else{
+							if(nodeCap >=  mbSpecs[validChains.get(i).get(k).getDestination()]){
+							nodeCap-= mbSpecs[validChains.get(i).get(k).getDestination()];
+							//If sufficient cap to accommodate tuple; add tuple to the list
+								OCs.get(NFType).add(validChains.get(i).get(k).getDestination());	
+							}
+						}
+					}
+				}
+				//Find the best placement
+				int index = -1;
+				int maxInterLinks = -1;
+				Iterator it = OCs.entrySet().iterator();
+				 while (it.hasNext()) {
+				      Map.Entry pair = (Map.Entry)it.next();
+				      System.out.println("OC NF "+pair.getKey()+": "+pair.getValue());
+				   		if(((ArrayList<Tuple>)pair.getValue()).size() > maxInterLinks){
+				   			maxInterLinks = ((ArrayList<Tuple>)pair.getValue()).size();
+				   			index = (int)pair.getKey();
+					}
+				}
+				
+				 System.out.println("NF Type chosen = "+index);
+				 
+				//Place best NF set on this server node
+				for(int k=0; k< OCs.get(index).size();k++){
+					System.out.println("Placed NF "+OCs.get(index).get(k)+" on "+serverIndex);
+					om.nodeMapping[getIndexNF(f, OCs.get(index).get(k))] = serverIndex;
+					nodeCaps[j] -= mbSpecs[OCs.get(index).get(k)];
+				}
+				if(om.numNodesSettled() == f.getChain().size())
+					break;
+			}
+			System.out.println(om);			
+		}
+		
+		
 	}
 	
 	
@@ -117,7 +210,7 @@ public class Heuristic {
 	//visited has mb Typles, currentNode is NF index, chain has NF types
 	public void createChain(boolean[] visited, int currentNode, ArrayList<Tuple> chain){
 		
-		System.out.println("Curent NF Type = "+f.getChain().get(currentNode));
+		System.out.println("Current NF Type = "+f.getChain().get(currentNode));
 		if(chain.size() == adjacencyList.length-1){
 			System.out.println("Found a chain: "+chain.toString());
 			validChains.add((ArrayList<Tuple>)chain.clone());
