@@ -90,13 +90,17 @@ public class Heuristic {
 		System.out.println(candidateNodes);
 
 		int[] nodeCaps = new int[candidateNodes.size()];
+		int[] internalSwitchingNodeCap = new int[candidateNodes.size()];
+		
 		ArrayList<OverlayMapping> omSol = new ArrayList<OverlayMapping>();
 		for(int i=0;i<validChains.size();i++){
 			//System.out.println("For Valid Chain "+validChains.get(i));
 			
-			//Initialize Nodes Cap
-			for(int e=0;e<nodeCaps.length;e++)
+			//Initialize Nodes Cap & Internal Switching Cap
+			for(int e=0;e<nodeCaps.length;e++){
 				nodeCaps[e] = G.getNodeCap()[candidateNodes.get(e).getSource()];
+				internalSwitchingNodeCap[e] = G.getInterNodeSwitchingCap()[candidateNodes.get(e).getSource()];
+			}
 		
 			//Initialize a new Overlay Mapping Solution
 			OverlayMapping om = new OverlayMapping(f.getChain().size());
@@ -111,6 +115,7 @@ public class Heuristic {
 				for(int t=0;t<=validChains.get(i).size();t++){ //For every NF in the chain
 					
 					int nodeCap = nodeCaps[j];
+					int internalSwitchingCap = internalSwitchingNodeCap[j];
 					int NFType = -1;
 					if(t == validChains.get(i).size())
 						NFType = validChains.get(i).get(t-1).getDestination();
@@ -140,19 +145,25 @@ public class Heuristic {
 							
 							if(nodeCap >= (mbSpecs[validChains.get(i).get(k).getSource()]+
 										  mbSpecs[validChains.get(i).get(k).getDestination()])){
-								nodeCap-= (mbSpecs[validChains.get(i).get(k).getSource()]+
-									  mbSpecs[validChains.get(i).get(k).getDestination()]);
-								//If sufficient cap to accommodate tuple; add tuple to the list
-								OCs.get(NFType).add(validChains.get(i).get(k).getSource());	
-								OCs.get(NFType).add(validChains.get(i).get(k).getDestination());	
-								intSwitchedLinks.get(NFType).add(validChains.get(i).get(k));
+								if(internalSwitchingCap >= f.getBw()){
+									nodeCap-= (mbSpecs[validChains.get(i).get(k).getSource()]+
+										  mbSpecs[validChains.get(i).get(k).getDestination()]);
+									internalSwitchingCap -= f.getBw();
+									//If sufficient cap to accommodate tuple; add tuple to the list
+									OCs.get(NFType).add(validChains.get(i).get(k).getSource());	
+									OCs.get(NFType).add(validChains.get(i).get(k).getDestination());	
+									intSwitchedLinks.get(NFType).add(validChains.get(i).get(k));
+								}
 							}
 							}else{
 							if(nodeCap >=  mbSpecs[validChains.get(i).get(k).getDestination()]){
-							nodeCap-= mbSpecs[validChains.get(i).get(k).getDestination()];
-							//If sufficient cap to accommodate tuple; add tuple to the list
-								OCs.get(NFType).add(validChains.get(i).get(k).getDestination());	
-								intSwitchedLinks.get(NFType).add(validChains.get(i).get(k));
+								if(internalSwitchingCap >= f.getBw()){
+									nodeCap-= mbSpecs[validChains.get(i).get(k).getDestination()];
+									internalSwitchingCap -= f.getBw();
+									//If sufficient cap to accommodate tuple; add tuple to the list
+									OCs.get(NFType).add(validChains.get(i).get(k).getDestination());	
+									intSwitchedLinks.get(NFType).add(validChains.get(i).get(k));
+								}
 							}
 						}
 					}
@@ -182,6 +193,7 @@ public class Heuristic {
 				for(int k=0; k< intSwitchedLinks.get(index).size();k++){
 					//System.out.println("Internally Switched V. Links "+intSwitchedLinks.get(index).get(k));
 					om.linkMapping.put(intSwitchedLinks.get(index).get(k), new ArrayList<Tuple>());
+					internalSwitchingNodeCap[j] -= f.getBw();
 				}
 				
 				if(om.numNodesSettled() == f.getChain().size()){

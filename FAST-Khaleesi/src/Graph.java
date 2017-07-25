@@ -91,7 +91,8 @@ public class Graph {
     public String toString() {
     	String content = "Nodes Spec:\n";
         for (int i = 0; i < nodeCap.length; i++)
-            content += "- Node " + i + ", Cap = "+ nodeCap[i] + "\n";
+            content += "- Node " + i + ", Cap = "+ nodeCap[i] +
+            ", Internal Switchin Cap = "+ interNodeSwitchingCap[i]+"\n";
 
         content += "Adjacency List:\n";
         for (int i = 0; i < adjList.size(); i++)
