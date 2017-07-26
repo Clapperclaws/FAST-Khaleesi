@@ -87,10 +87,18 @@ public class Driver {
 	
 	public static boolean isPrev(int i, int x, int j, int y, Flow f, int[][] M){
 			
-		if((f.getChain().get(i) == f.getChain().get(y)) && (M[f.getChain().get(i)][f.getChain().get(j)] == 1))
-			return true;
-		if((f.getChain().get(j) == f.getChain().get(x)) && (M[f.getChain().get(i)][f.getChain().get(j)] == 1))
-			return true;
+		if (f.getChain().get(i) == f.getChain().get(y)){
+			   if(M[f.getChain().get(i)][f.getChain().get(j)] == 1)
+				   return true;
+			   else
+				   return false;
+		}
+		if (f.getChain().get(j) == f.getChain().get(x)){
+		    if(M[f.getChain().get(i)][f.getChain().get(j)] == 1)
+		    	return true;
+		    else
+		    	return false;
+		}
 		if(M[f.getChain().get(j)][f.getChain().get(y)] == 1)
 			return isPrev(i,x,j,y-1,f,M);
 		if(M[f.getChain().get(i)][f.getChain().get(x)] == 1)
