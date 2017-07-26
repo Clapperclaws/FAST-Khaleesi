@@ -18,10 +18,10 @@ public class Dijkstra {
     private boolean[] finished;
     private int[] predecessors;
     private int[] distance;
-    private int[][] capacity;
+    private long[][] capacity;
     // private Map<Integer, Integer> distance;
 
-    public Dijkstra(Graph graph, int[][] capacity) {
+    public Dijkstra(Graph graph, long[][] capacity) {
         this.g = graph;
         this.capacity = capacity;
         // g = new Graph(graph); // Create a copy of the graph

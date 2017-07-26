@@ -5,7 +5,7 @@
 public class EndPoint {
 
 	private int nodeId; // Index of the node at the other end of the link
-	private int bw; //Bandwidth (demand/capacity) of the link
+	private long bw; //Bandwidth (demand/capacity) of the link
 	private int type; //Type of the node at the other end of the link
 
 	//Default Constructor
@@ -16,7 +16,7 @@ public class EndPoint {
 	}
 	
 	//Initializing Constructor
-	public EndPoint(int nodeId, int bw, int type){
+	public EndPoint(int nodeId, long bw, int type){
 		this.nodeId = nodeId;
 		this.bw     = bw;
 		this.type   = type;
@@ -40,12 +40,12 @@ public class EndPoint {
 	}
 	
 	//Get the bandwidth (demand/capacity) of the incident link
-	public int getBw() {
+	public long getBw() {
 		return bw;
 	}
 
 	//Set the bandwidth (demand/capacity) of the incident link
-	public void setBw(int bw) {
+	public void setBw(long bw) {
 		this.bw = bw;
 	}
 	
