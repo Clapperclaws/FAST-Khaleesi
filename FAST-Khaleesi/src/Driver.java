@@ -66,9 +66,11 @@ public class Driver {
 		linkSelectionWriter.close();
 		durationWriter.close();
 		
-		for (int flowIdx = 0; flowIdx < flowsList.size(); ++flowIdx) {
+		// int startFlowIndex = 0, endFlowIndex = flowsList.size() - 1;
+		int startFlowIndex = 176, endFlowIndex = 176;
+		for (int flowIdx = startFlowIndex; flowIdx <= endFlowIndex; ++flowIdx) {
 			ArrayList<Tuple> vLinks = generateE(flowsList.get(flowIdx), rcm);
-			// System.out.println("List of Es \n" + vLinks);
+			System.out.println("List of Es \n" + vLinks);
 			Heuristic hrst = new Heuristic();
 			OverlayMapping oMapping = hrst.executeHeuristic(substrateNetwork, rcm,
 					flowIdx, flowsList.get(flowIdx), vLinks, mbSpecs, logPrefix);

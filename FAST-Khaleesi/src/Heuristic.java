@@ -35,6 +35,12 @@ public class Heuristic {
 				Omega[getIndexNF(f, E.get(i).getSource())][getIndexNF(f,
 				    E.get(i).getDestination())] = 1;
 		}
+		for (int i = 0; i < f.getChain().size(); i++) {
+			for (int j = 0; j < f.getChain().size(); j++)
+				System.out.print(Omega[i][j] + ",");
+			System.out.print("\n");
+		}
+		System.out.print("\n");
 	}
 
 	public ArrayList<Tuple> getCandidateServers(Graph G, int minDemand,
