@@ -183,13 +183,12 @@ public class Heuristic {
 				minIndex = i;
 			}
 		}
-
+		BufferedWriter costWriter = new BufferedWriter(
+		    new FileWriter(new File(logPrefix + ".cost"), true));
 		if (minIndex != -1) {
 			long endTime = System.currentTimeMillis();
 			System.out.println("Lowest Cost Sol is Sol " + minIndex);
-			System.out.println(omSol.get(minIndex));
-			BufferedWriter costWriter = new BufferedWriter(
-			    new FileWriter(new File(logPrefix + ".cost"), true));
+			System.out.println(omSol.get(minIndex));			
 			BufferedWriter nodePlacementWriter = new BufferedWriter(
 			    new FileWriter(new File(logPrefix + ".nmap"), true));
 			BufferedWriter linkPlacementWriter = new BufferedWriter(
@@ -198,7 +197,8 @@ public class Heuristic {
 			    new FileWriter(new File(logPrefix + ".sequence"), true));
 			BufferedWriter durationWriter = new BufferedWriter(
 			    new FileWriter(new File(logPrefix + ".time"), true));
-
+			BufferedWriter emapWriter = new BufferedWriter(
+			    new FileWriter(new File(logPrefix + ".emap"), true));
 			// Write cost.
 			costWriter
 			    .append(flowIdx + "," + omSol.get(minIndex).getMappingCost() + "\n");
@@ -227,6 +227,20 @@ public class Heuristic {
 				nodePlacementWriter.append(
 				    "," + omSol.get(minIndex).getNodeMapping(embeddedSequence.get(i)));
 			}
+
+			// Write link mapping.
+			emapWriter.append(Integer.toString(flowIdx));
+			for (Tuple vLink : omSol.get(minIndex).getAllLinkMapping().keySet()) {
+				ArrayList<Tuple> path = omSol.get(minIndex).getLinkMapping(vLink);
+				for (Tuple sLink : path) {
+					emapWriter
+					    .append("," + sLink.getSource() + "," + sLink.getDestination());
+					emapWriter.flush();
+				}
+			}
+			emapWriter.append("\n");
+			emapWriter.close();
+			
 			linkSelectionWriter.append("\n");
 			linkSelectionWriter.flush();
 			linkSelectionWriter.close();
@@ -234,8 +248,11 @@ public class Heuristic {
 			nodePlacementWriter.flush();
 			nodePlacementWriter.close();
 			return omSol.get(minIndex);
-		} else
+		} else {
 			System.out.println("No Solution Found!");
+			costWriter.write(flowIdx + ",-1\n");
+			costWriter.close();
+		}
 		return null;
 	}
 
@@ -321,7 +338,7 @@ public class Heuristic {
 
 		for (int j = 0; j < candidateNodes.size(); j++) {
 			int serverIndex = candidateNodes.get(j).getSource();
-			System.out.println("Candidate Server " + serverIndex);
+			// System.out.println("Candidate Server " + serverIndex);
 
 			HashMap<Integer, ArrayList<Integer>> OCs = new HashMap<Integer, ArrayList<Integer>>();
 			HashMap<Integer, ArrayList<Tuple>> intSwitchedLinks = new HashMap<Integer, ArrayList<Tuple>>();
@@ -390,26 +407,27 @@ public class Heuristic {
 			Iterator it = OCs.entrySet().iterator();
 			while (it.hasNext()) {
 				Map.Entry pair = (Map.Entry) it.next();
-				System.out.println("OC NF " + pair.getKey() + ": " + pair.getValue());
+				// System.out.println("OC NF " + pair.getKey() + ": " + pair.getValue());
 				if (((ArrayList<Tuple>) pair.getValue()).size() > maxInterLinks) {
 					maxInterLinks = ((ArrayList<Tuple>) pair.getValue()).size();
 					index = (int) pair.getKey();
 				}
 			}
 
-			System.out.println("NF Type chosen = " + index);
+			if (index < 0) return null;
+			// System.out.println("NF Type chosen = " + index);
 
 			// Place best NF set on this server node
 			for (int k = 0; k < OCs.get(index).size(); k++) {
-				System.out.println(
-				    "Placed NF " + OCs.get(index).get(k) + " on " + serverIndex);
+				// System.out.println(
+				//     "Placed NF " + OCs.get(index).get(k) + " on " + serverIndex);
 				om.nodeMapping[getIndexNF(f, OCs.get(index).get(k))] = serverIndex;
 				nodeCaps[j] -= mbSpecs[OCs.get(index).get(k)];
 			}
 
 			for (int k = 0; k < intSwitchedLinks.get(index).size(); k++) {
-				System.out.println("Internally Switched V. Links "
-				    + intSwitchedLinks.get(index).get(k));
+				// System.out.println("Internally Switched V. Links "
+				//     + intSwitchedLinks.get(index).get(k));
 				om.linkMapping.put(intSwitchedLinks.get(index).get(k),
 				    new ArrayList<Tuple>());
 				internalSwitchingNodeCap[j] -= f.getBw();
@@ -417,7 +435,7 @@ public class Heuristic {
 
 			if (om.numNodesSettled() == f.getChain().size()) {
 				om.setChainOrder(chain);
-				System.out.println("Node Embedding for Chain " + chain + "\n" + om);
+				// System.out.println("Node Embedding for Chain " + chain + "\n" + om);
 				return om;
 			}
 		}
@@ -426,8 +444,7 @@ public class Heuristic {
 
 	public OverlayMapping performLinkEmbedding(OverlayMapping omSol, Graph G,
 	    long[][] capacity) {
-
-		System.out.println("New Execution");
+		// System.out.println("New Execution");
 		boolean infeasibleLinkEmbedding = false;
 		for (int j = 0; j < omSol.getChainOrder().size() + 2; j++) {
 
@@ -449,7 +466,7 @@ public class Heuristic {
 			// Route from Ingress to Starting Node
 			if (j == omSol.getChainOrder().size()) {
 				// System.out.println("Routing Ingress Path...." + "Starting NF Type ="
-				//     + omSol.getChainOrder().get(0).getSource());
+				// + omSol.getChainOrder().get(0).getSource());
 				sourceIndex = f.getSource();
 				destinationIndex = omSol.getNodeMapping(
 				    getIndexNF(f, omSol.getChainOrder().get(0).getSource()));
@@ -457,8 +474,8 @@ public class Heuristic {
 			} else {
 				if (j == omSol.getChainOrder().size() + 1) {
 					// System.out.println("Routing Egress Path...." + " Last NF Type ="
-					//     + omSol.getChainOrder().get(omSol.getChainOrder().size() - 1)
-					//         .getDestination());
+					// + omSol.getChainOrder().get(omSol.getChainOrder().size() - 1)
+					// .getDestination());
 					sourceIndex = omSol.getNodeMapping(getIndexNF(f, omSol.getChainOrder()
 					    .get(omSol.getChainOrder().size() - 1).getDestination()));
 					destinationIndex = f.getDestination();
@@ -477,7 +494,7 @@ public class Heuristic {
 				    f.getBw());
 				if ((path == null)
 				    || (path.isEmpty() && sourceIndex != destinationIndex)) {
-					System.out.println("Could not route tuple " + tup);
+					// System.out.println("Could not route tuple " + tup);
 					infeasibleLinkEmbedding = true;
 					break;
 				} else {
@@ -531,13 +548,13 @@ public class Heuristic {
 		}
 		for (int i = 0; i < f.getChain().size(); i++)
 			createChain(new boolean[f.getChain().size()], i, new ArrayList<Tuple>());
-		//System.out.println("List of Valid Chains is: ");
-//		int cntr = 1;
-//		for (int i = 0; i < validChains.size(); i++) {
-//			System.out
-//			    .println("Chain " + cntr + "- " + (validChains.get(i)).toString());
-//			cntr++;
-//		}
+		// System.out.println("List of Valid Chains is: ");
+		// int cntr = 1;
+		// for (int i = 0; i < validChains.size(); i++) {
+		// System.out
+		// .println("Chain " + cntr + "- " + (validChains.get(i)).toString());
+		// cntr++;
+		// }
 	}
 
 	// visited has mb Typles, currentNode is NF index, chain has NF types

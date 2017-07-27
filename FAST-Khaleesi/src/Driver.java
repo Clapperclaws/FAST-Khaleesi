@@ -50,27 +50,33 @@ public class Driver {
 		// 	System.out.println(Arrays.toString(rcm[i]));
 		// }
 
-		BufferedWriter costWriter = new BufferedWriter(
-		    new FileWriter(new File(logPrefix + ".cost")));
-		BufferedWriter nodePlacementWriter = new BufferedWriter(
-		    new FileWriter(new File(logPrefix + ".nmap")));
-		BufferedWriter linkPlacementWriter = new BufferedWriter(
-		    new FileWriter(new File(logPrefix + ".path")));
-		BufferedWriter linkSelectionWriter = new BufferedWriter(
-		    new FileWriter(new File(logPrefix + ".sequence")));
-		BufferedWriter durationWriter = new BufferedWriter(
-		    new FileWriter(new File(logPrefix + ".time")));
-		costWriter.close();
-		nodePlacementWriter.close();
-		linkPlacementWriter.close();
-		linkSelectionWriter.close();
-		durationWriter.close();
+		//		BufferedWriter costWriter = new BufferedWriter(
+		//		    new FileWriter(new File(logPrefix + ".cost")));
+		//		BufferedWriter nodePlacementWriter = new BufferedWriter(
+		//		    new FileWriter(new File(logPrefix + ".nmap")));
+		//		BufferedWriter linkPlacementWriter = new BufferedWriter(
+		//		    new FileWriter(new File(logPrefix + ".path")));
+		//		BufferedWriter linkSelectionWriter = new BufferedWriter(
+		//		    new FileWriter(new File(logPrefix + ".sequence")));
+		//		BufferedWriter durationWriter = new BufferedWriter(
+		//		    new FileWriter(new File(logPrefix + ".time")));
+		//		costWriter.close();
+		//		nodePlacementWriter.close();
+		//		linkPlacementWriter.close();
+		//		linkSelectionWriter.close();
+		//		durationWriter.close();
 		
 		int startFlowIndex = 0, endFlowIndex = flowsList.size() - 1;
+		if (parsedArgs.get("--start_index") != null) {
+			startFlowIndex = Integer.parseInt(parsedArgs.get("--start_index"));
+		}
+		if (parsedArgs.get("--end_index") != null) {
+			endFlowIndex = Integer.parseInt(parsedArgs.get("--end_index"));
+		}
 		// int startFlowIndex = 176, endFlowIndex = 176;
 		for (int flowIdx = startFlowIndex; flowIdx <= endFlowIndex; ++flowIdx) {
 			ArrayList<Tuple> vLinks = generateE(flowsList.get(flowIdx), rcm);
-			System.out.println("List of Es \n" + vLinks);
+			// System.out.println("List of Es \n" + vLinks);
 			Heuristic hrst = new Heuristic();
 			OverlayMapping oMapping = hrst.executeHeuristic(substrateNetwork, rcm,
 					flowIdx, flowsList.get(flowIdx), vLinks, mbSpecs, logPrefix);
