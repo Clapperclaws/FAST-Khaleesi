@@ -46,6 +46,10 @@ public class OverlayMapping {
 	public ArrayList<Tuple> getLinkMapping(Tuple t) {
 		return linkMapping.get(t);
 	}
+	
+	public HashMap<Tuple, ArrayList<Tuple>> getAllLinkMapping() {
+		return linkMapping;
+	}
 
 	public void setLinkMapping(Tuple t, Tuple p) {
 		if (!linkMapping.containsKey(t))

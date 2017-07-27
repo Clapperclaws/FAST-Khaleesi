@@ -32,26 +32,23 @@ public class Driver {
 		// Read Substrate Network
 		Graph substrateNetwork = ReadTopology(parsedArgs.get("--sn_topology_file"),
 		    -1);
-		System.out.println("Substrate Network \n" + substrateNetwork);
+		// System.out.println("Substrate Network \n" + substrateNetwork);
 
 		// Read List of Flows
 		ArrayList<Flow> flowsList = ReadFlows(parsedArgs.get("--flows_file"));
-		System.out.println("List of Flows: \n" + flowsList);
+		// System.out.println("List of Flows: \n" + flowsList);
 
 		// Read Middlebox Specs
 		int[] mbSpecs = ReadMBSpecs(parsedArgs.get("--mbox_spec_file"));
-		System.out.println("MBs Specs:" + Arrays.toString(mbSpecs));
+		// System.out.println("MBs Specs:" + Arrays.toString(mbSpecs));
 		String logPrefix = parsedArgs.get("--log_prefix");
 
 		// Read RCM
 		int[][] rcm = ReadRCM(parsedArgs.get("--rcm_file"), mbSpecs.length);
-		System.out.print("ReadOrderCompatibilityMatrix \n");
-		for (int i = 0; i < rcm.length; i++) {
-			System.out.println(Arrays.toString(rcm[i]));
-		}
-
-		ArrayList<Tuple> vLinks = generateE(flowsList.get(0), rcm);
-		System.out.println("List of Es \n" + vLinks);
+		// System.out.print("ReadOrderCompatibilityMatrix \n");
+		// for (int i = 0; i < rcm.length; i++) {
+		// 	System.out.println(Arrays.toString(rcm[i]));
+		// }
 
 		BufferedWriter costWriter = new BufferedWriter(
 		    new FileWriter(new File(logPrefix + ".cost")));
@@ -68,12 +65,13 @@ public class Driver {
 		linkPlacementWriter.close();
 		linkSelectionWriter.close();
 		durationWriter.close();
-
-		Heuristic hrst = new Heuristic();
-		OverlayMapping oMapping = hrst.executeHeuristic(substrateNetwork, rcm,
-		    flowsList.get(0), vLinks, mbSpecs);
-		if (oMapping != null) {
-			
+		
+		for (int flowIdx = 0; flowIdx < flowsList.size(); ++flowIdx) {
+			ArrayList<Tuple> vLinks = generateE(flowsList.get(flowIdx), rcm);
+			// System.out.println("List of Es \n" + vLinks);
+			Heuristic hrst = new Heuristic();
+			OverlayMapping oMapping = hrst.executeHeuristic(substrateNetwork, rcm,
+					flowIdx, flowsList.get(flowIdx), vLinks, mbSpecs, logPrefix);
 		}
 	}
 

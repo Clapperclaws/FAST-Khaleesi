@@ -1,9 +1,14 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Stack;
 
 public class Heuristic {
 
@@ -42,7 +47,7 @@ public class Heuristic {
 		int ingress = f.getSource();
 		int egress = f.getDestination();
 		for (int i = 0; i < G.getNodeCount(); i++) {
-			System.out.println("Node " + i);
+			// System.out.println("Node " + i);
 			int di = 0;
 			int de = 0;
 			// Skip Node if it doesn't have enough node resources to support any NF
@@ -52,15 +57,15 @@ public class Heuristic {
 			if (i != f.getSource()) {
 				ArrayList<Tuple> pathToIng = djst.getPath(ingress, i, f.getBw());
 				di = pathToIng.size();
-				System.out.println("di_" + i + "=" + di);
+				// System.out.println("di_" + i + "=" + di);
 			}
 
 			if (i != f.getDestination()) {
 				ArrayList<Tuple> pathToEgr = djst.getPath(egress, i, f.getBw());
 				de = pathToEgr.size();
-				System.out.println("de_" + i + "=" + de);
+				// System.out.println("de_" + i + "=" + de);
 			}
-			System.out.println(" Value = " + G.getNodeCap()[i] / (di + de));
+			// System.out.println(" Value = " + G.getNodeCap()[i] / (di + de));
 			double oc = (double) G.getNodeCap()[i] / (double) (di + de);
 			candidateNodes.add(new Tuple(i, (int) (oc * 10e4)));
 		}
@@ -68,9 +73,10 @@ public class Heuristic {
 		return candidateNodes;
 	}
 
-	public OverlayMapping executeHeuristic(Graph G, int[][] M, Flow f,
-	    ArrayList<Tuple> E, int[] mbSpecs) {
-
+	public OverlayMapping executeHeuristic(Graph G, int[][] M, int flowIdx,
+	    Flow f, ArrayList<Tuple> E, int[] mbSpecs, String logPrefix)
+	    throws IOException {
+		long startTime = System.currentTimeMillis();
 		this.f = f;
 		adjacencyList = new ArrayList[f.getChain().size()];
 
@@ -101,8 +107,8 @@ public class Heuristic {
 
 		// Step 3 - Sort Physical Servers
 		Collections.sort(candidateNodes);
-		System.out.println("Candidate Nodes");
-		System.out.println(candidateNodes);
+		// System.out.println("Candidate Nodes");
+		// System.out.println(candidateNodes);
 
 		ArrayList<OverlayMapping> omSol = new ArrayList<OverlayMapping>();
 		for (int i = 0; i < validChains.size(); i++) {
@@ -163,9 +169,9 @@ public class Heuristic {
 		int minIndex = -1;
 		int minCost = Integer.MAX_VALUE;
 		for (int i = 0; i < omSol.size(); i++) {
-			System.out.println("Overlay Mapping Solution " + i);
-			System.out.println(omSol.get(i));
-			System.out.println("Cost = " + omCosts.get(i));
+			// System.out.println("Overlay Mapping Solution " + i);
+			// System.out.println(omSol.get(i));
+			// System.out.println("Cost = " + omCosts.get(i));
 			if (omCosts.get(i) < minCost) {
 				minCost = omCosts.get(i);
 				minIndex = i;
@@ -173,12 +179,113 @@ public class Heuristic {
 		}
 
 		if (minIndex != -1) {
+			long endTime = System.currentTimeMillis();
 			System.out.println("Lowest Cost Sol is Sol " + minIndex);
 			System.out.println(omSol.get(minIndex));
+			BufferedWriter costWriter = new BufferedWriter(
+			    new FileWriter(new File(logPrefix + ".cost"), true));
+			BufferedWriter nodePlacementWriter = new BufferedWriter(
+			    new FileWriter(new File(logPrefix + ".nmap"), true));
+			BufferedWriter linkPlacementWriter = new BufferedWriter(
+			    new FileWriter(new File(logPrefix + ".path"), true));
+			BufferedWriter linkSelectionWriter = new BufferedWriter(
+			    new FileWriter(new File(logPrefix + ".sequence"), true));
+			BufferedWriter durationWriter = new BufferedWriter(
+			    new FileWriter(new File(logPrefix + ".time"), true));
+
+			// Write cost.
+			costWriter
+			    .append(flowIdx + "," + omSol.get(minIndex).getMappingCost() + "\n");
+			costWriter.flush();
+			costWriter.close();
+
+			// Write duration.
+			durationWriter.append(flowIdx + "," + (endTime - startTime) + "\n");
+			durationWriter.flush();
+			durationWriter.close();
+
+			// Write the sequence that has been embedded and the node mapping in that
+			// sequence.
+			ArrayList<Tuple> selectedLinks = new ArrayList<Tuple>();
+			for (Tuple tLink : omSol.get(minIndex).getChainOrder()) {
+				int u = getIndexNF(f, tLink.getSource());
+				int v = getIndexNF(f, tLink.getDestination());
+				selectedLinks.add(new Tuple(u, v));
+			}
+			ArrayList<Integer> embeddedSequence = ComputePath(selectedLinks,
+			    f.getChain().size());
+			linkSelectionWriter.append(Integer.toString(flowIdx));
+			nodePlacementWriter.append(Integer.toString(flowIdx));
+			for (int i = 0; i < embeddedSequence.size(); ++i) {
+				linkSelectionWriter.append("," + embeddedSequence.get(i));
+				nodePlacementWriter.append(
+				    "," + omSol.get(minIndex).getNodeMapping(embeddedSequence.get(i)));
+			}
+			linkSelectionWriter.append("\n");
+			linkSelectionWriter.flush();
+			linkSelectionWriter.close();
+			nodePlacementWriter.append("\n");
+			nodePlacementWriter.flush();
+			nodePlacementWriter.close();
 			return omSol.get(minIndex);
 		} else
 			System.out.println("No Solution Found!");
 		return null;
+	}
+
+	// This function computes the eulerian path from a set of links. This function
+	// can be leveraged to figure out what chain has been embedded and also what
+	// is the embedding path of a chain.
+	ArrayList<Integer> ComputePath(ArrayList<Tuple> links, int numTotalNodes) {
+		ArrayList<ArrayList<Integer>> adj = new ArrayList<ArrayList<Integer>>();
+		ArrayList<Integer> path = new ArrayList<Integer>();
+		HashMap<Integer, Integer> indegree = new HashMap<Integer, Integer>();
+		if (links == null || links.size() <= 0)
+			return path;
+		// System.out.println("numTotalNodes = " + numTotalNodes);
+		// System.out.println(links);
+		for (int i = 0; i < numTotalNodes; ++i)
+			adj.add(new ArrayList<Integer>());
+		for (int i = 0; i < links.size(); ++i) {
+			Tuple link = links.get(i);
+			adj.get(link.getSource()).add(link.getDestination());
+			if (!indegree.containsKey(link.getDestination()))
+				indegree.put(link.getDestination(), 0);
+			if (!indegree.containsKey(link.getSource()))
+				indegree.put(link.getSource(), 0);
+			int prevInDeg = indegree.get(link.getDestination());
+			indegree.put(link.getDestination(), prevInDeg + 1);
+		}
+		int source = -1;
+		for (Integer key : indegree.keySet()) {
+			if (indegree.get(key) == 0) {
+				source = key;
+				break;
+			}
+		}
+
+		if (source == -1)
+			return path;
+
+		Stack<Integer> s = new Stack<Integer>();
+		int currentNode = source;
+		while (true) {
+			if (adj.get(currentNode).isEmpty()) {
+				path.add(currentNode);
+				if (!s.empty()) {
+					currentNode = s.pop();
+				} else
+					break;
+			} else {
+				s.push(currentNode);
+				int neighbor = adj.get(currentNode)
+				    .get(adj.get(currentNode).size() - 1);
+				adj.get(currentNode).remove(adj.get(currentNode).size() - 1);
+				currentNode = neighbor;
+			}
+		}
+		Collections.reverse(path);
+		return path;
 	}
 
 	public OverlayMapping getOverlaySolution(Graph G, ArrayList<Tuple> chain,
@@ -319,33 +426,33 @@ public class Heuristic {
 		for (int j = 0; j < omSol.getChainOrder().size() + 2; j++) {
 
 			// For Testing
-			System.out.println("Network Capacity");
-			for (int i = 0; i < capacity.length; i++) {
-				for (int k = 0; k < capacity[i].length; k++) {
-					System.out.print(capacity[i][k] + ",");
-				}
-				System.out.println();
-			}
-			System.out.println();
+			// System.out.println("Network Capacity");
+			// for (int i = 0; i < capacity.length; i++) {
+			// for (int k = 0; k < capacity[i].length; k++) {
+			// System.out.print(capacity[i][k] + ",");
+			// }
+			// System.out.println();
+			// }
+			// System.out.println();
 
-			System.out.println(j + "-" + omSol.getChainOrder().size());
+			// System.out.println(j + "-" + omSol.getChainOrder().size());
 			Dijkstra djst = new Dijkstra(G, capacity);
 			Tuple tup;
 			int sourceIndex;
 			int destinationIndex;
 			// Route from Ingress to Starting Node
 			if (j == omSol.getChainOrder().size()) {
-				System.out.println("Routing Ingress Path...." + "Starting NF Type ="
-				    + omSol.getChainOrder().get(0).getSource());
+				// System.out.println("Routing Ingress Path...." + "Starting NF Type ="
+				//     + omSol.getChainOrder().get(0).getSource());
 				sourceIndex = f.getSource();
 				destinationIndex = omSol.getNodeMapping(
 				    getIndexNF(f, omSol.getChainOrder().get(0).getSource()));
 				tup = new Tuple(sourceIndex, destinationIndex);
 			} else {
 				if (j == omSol.getChainOrder().size() + 1) {
-					System.out.println("Routing Egress Path...." + " Last NF Type ="
-					    + omSol.getChainOrder().get(omSol.getChainOrder().size() - 1)
-					        .getDestination());
+					// System.out.println("Routing Egress Path...." + " Last NF Type ="
+					//     + omSol.getChainOrder().get(omSol.getChainOrder().size() - 1)
+					//         .getDestination());
 					sourceIndex = omSol.getNodeMapping(getIndexNF(f, omSol.getChainOrder()
 					    .get(omSol.getChainOrder().size() - 1).getDestination()));
 					destinationIndex = f.getDestination();
@@ -368,7 +475,7 @@ public class Heuristic {
 					infeasibleLinkEmbedding = true;
 					break;
 				} else {
-					System.out.println(tup + " routed via " + path);
+					// System.out.println(tup + " routed via " + path);
 					capacity = updateNodeCap(path, capacity, f.getBw(), false); // Increment
 					                                                            // Capacity
 					                                                            // Matrix
@@ -387,8 +494,7 @@ public class Heuristic {
 		}
 		if (infeasibleLinkEmbedding)
 			return null;
-
-		System.out.println("After Link Embedding " + omSol);
+		// System.out.println("After Link Embedding " + omSol);
 		return omSol;
 	}
 
@@ -419,15 +525,13 @@ public class Heuristic {
 		}
 		for (int i = 0; i < f.getChain().size(); i++)
 			createChain(new boolean[f.getChain().size()], i, new ArrayList<Tuple>());
-
-		System.out.println("List of Valid Chains is: ");
-		int cntr = 1;
-		for (int i = 0; i < validChains.size(); i++) {
-			System.out
-			    .println("Chain " + cntr + "- " + (validChains.get(i)).toString());
-			cntr++;
-		}
-
+		//System.out.println("List of Valid Chains is: ");
+//		int cntr = 1;
+//		for (int i = 0; i < validChains.size(); i++) {
+//			System.out
+//			    .println("Chain " + cntr + "- " + (validChains.get(i)).toString());
+//			cntr++;
+//		}
 	}
 
 	// visited has mb Typles, currentNode is NF index, chain has NF types
@@ -484,5 +588,14 @@ public class Heuristic {
 				index = i;
 		}
 		return index;
+	}
+
+	public int getVLinkIndex(int srcType, int dstType, ArrayList<Tuple> E) {
+		for (int i = 0; i < E.size(); i++) {
+			if (E.get(i).getSource() == srcType
+			    && E.get(i).getDestination() == dstType)
+				return i;
+		}
+		return -1;
 	}
 }
