@@ -177,7 +177,7 @@ def update_graph_capacity(sn, traffic_request, flow_id, mbox_spec, nmap_file,
                     if u > v:
                         u, v = v, u
                     sn.get_edge_data(u, v)['bw'] += (sign * bw)
-                    util_matrix[(u, v]] -= (sign * bw)
+                    util_matrix[(u, v)] -= (sign * bw)
     return sn
 
 def get_embedding_cost(cost_file, flow_id):
