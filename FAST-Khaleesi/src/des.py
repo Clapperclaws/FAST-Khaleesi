@@ -187,7 +187,7 @@ def get_embedding_cost(cost_file, flow_id):
             for line in reversed(f.readlines()):
                 tokens = line.strip("\n\r").split(",")
                 if int(tokens[0]) == int(flow_id):
-                    ret = float(tokens[1])
+                    ret = int(float(tokens[1]))
                     break
     except IOError:
         pass
