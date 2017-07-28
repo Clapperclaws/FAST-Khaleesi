@@ -153,29 +153,31 @@ def update_graph_capacity(sn, traffic_request, flow_id, mbox_spec, nmap_file,
                     node[1]['cpu'] += (sign * cpu_req)
                     break
             node_util[server_id] += (-sign * cpu_req)
+    
+    # Update internal switching capacity.
+    if len(placement) > 0:
+        for i in range(0, len(placement) - 1):
+            u_theta, v_theta = placement[i], placement[i + 1]
+            bw = traffic_request[int(flow_id)].bw
+            if int(u_theta) == int(v_theta):
+                for node in sn.nodes(data = "all"):
+                    if node[0] == u_theta:
+                        node[1]['bw'] += (sign * bw)
+                        break
 
-    # update link capacity/server switching capacity                
+    # update link capacity capacity                
     with open(emap_file, "r") as f:
         for line in reversed(f.readlines()):
             tokens = line.strip("\n\r").split(",")
             fid = int(tokens[0])
             if int(fid) == int(flow_id):
-                u, v = int(tokens[1]), int(tokens[2])
-                if len(tokens) <= 3:
-                    bw = traffic_request[flow_id].bw
-                    nid = placement[u]
-                    for node in g.nodes(data="all"):
-                        if node[0] == nid:
-                            node[1]['bw'] += (sign * bw)
-                            break
-                else:
-                    for k in range(3, len(tokens), 2):
-                        u, v = int(tokens[k]), int(tokens[k + 1])
-                        bw = traffic_request[int(flow_id)].bw
-                        if u > v:
-                            u, v = v, u
-                        sn.get_edge_data(u, v)['bw'] += (sign * bw)
-                        util_matrix[(u, v)] += (-sign * bw)
+                for k in range(1, len(tokens), 2):
+                    u, v = int(tokens[k]), int(tokens[k + 1])
+                    bw = traffic_request[int(flow_id)].bw
+                    if u > v:
+                        u, v = v, u
+                    sn.get_edge_data(u, v)['bw'] += (sign * bw)
+                    util_matrix[(u, v]] -= (sign * bw)
     return sn
 
 def get_embedding_cost(cost_file, flow_id):
@@ -254,7 +256,7 @@ def main():
             # nothing. This can be checked by reading from $(flow_id).status file.
             # If there was a successful embedding increase graph's capacity.
             cost = get_embedding_cost(args.log_prefix + ".cost", flow_id)
-            # print cost
+            print "Cost = " + str(cost) + "\n"
             if cost <> -1:
                 sn = update_graph_capacity(sn, traffic_requests, flow_id,
                         mbox_specs, args.log_prefix + ".nmap", args.log_prefix + ".emap",
@@ -274,7 +276,7 @@ def main():
                     args.flows_file, args.mbox_spec_file, args.rcm_file,
                     args.log_prefix, e.flow_id, e.flow_id)
             cost = get_embedding_cost(args.log_prefix + ".cost", flow_id)
-            # print "Cost: " + str(cost) + "\n"
+            print "Cost: " + str(cost) + "\n"
             if cost <> -1:
                 sn = update_graph_capacity(sn, traffic_requests, flow_id,
                         mbox_specs, args.log_prefix + ".nmap", args.log_prefix + ".emap",
