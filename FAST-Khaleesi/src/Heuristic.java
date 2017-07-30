@@ -62,18 +62,22 @@ public class Heuristic {
 
 			if (i != f.getSource()) {
 				ArrayList<Tuple> pathToIng = djst.getPath(ingress, i, f.getBw());
-				di = pathToIng.size();
+        if (pathToIng == null) di = 99999999;
+        else di = pathToIng.size();
 				// System.out.println("di_" + i + "=" + di);
 			}
 
 			if (i != f.getDestination()) {
 				ArrayList<Tuple> pathToEgr = djst.getPath(egress, i, f.getBw());
-				de = pathToEgr.size();
+        if (pathToEgr == null) de = 99999999;
+        else de = pathToEgr.size();
 				// System.out.println("de_" + i + "=" + de);
 			}
 			// System.out.println(" Value = " + G.getNodeCap()[i] / (di + de));
-			double oc = (double) G.getNodeCap()[i] / (double) (di + de);
-			candidateNodes.add(new Tuple(i, (int) (oc * 10e4)));
+      if (di != 99999999 && de != 99999999) {
+	  		double oc = (double) G.getNodeCap()[i] / (double) (di + de);
+		  	candidateNodes.add(new Tuple(i, (int) (oc * 10e4)));
+      }
 		}
 
 		return candidateNodes;
