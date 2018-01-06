@@ -27,7 +27,7 @@ public class Driver {
 		return ret;
 	}
 
-	public static void main(String[] args) throws IOException, IloException {
+	public static void main(String[] args) throws IOException {
 		HashMap<String, String> parsedArgs = ParseArgs(args);
 		// Read Substrate Network
 		Graph substrateNetwork = ReadTopology(parsedArgs.get("--sn_topology_file"),
