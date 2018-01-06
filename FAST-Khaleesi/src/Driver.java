@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
-import ilog.concert.IloException;
-
 public class Driver {
 	public static String snFile = "";
 	public static String flowsFile = "";
